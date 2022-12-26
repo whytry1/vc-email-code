@@ -1,0 +1,77 @@
+import requests
+import newspaper
+import nltk
+import re
+import time
+import smtplib
+
+# Set up list of news sources to scrape
+sources = ['https://techcrunch.com/', 'https://www.cnbc.com/venture-capital/', 'https://www.forbes.com/venture-capital/']
+
+# Set up email variables
+from_address = 'your_email@example.com'
+to_address = 'your_email@example.com'
+password = 'your_email_password'
+
+while True:
+    # Set up empty dictionary to store data
+    data = {}
+
+    # Scrape news sources
+    for source in sources:
+        # Use newspaper library to download articles from source
+        news_paper = newspaper.build(source, memoize_articles=False)
+
+        # Extract information from articles
+        for article in news_paper.articles:
+            try:
+                # Download article
+                article.download()
+                article.parse()
+
+                # Extract text and clean it
+                text = article.text
+                text = re.sub(r'[^\w\s]', '', text)
+                text = text.lower()
+
+                # Tokenize text and extract named entities
+                tokens = nltk.word_tokenize(text)
+                entities = nltk.ne_chunk(nltk.pos_tag(tokens))
+
+                # Extract named entities of type 'ORGANIZATION' and 'GPE' (geo-political entity)
+                organizations = []
+                locations = []
+                for entity in entities:
+                    if isinstance(entity, nltk.tree.Tree):
+                        if entity.label() == 'ORGANIZATION':
+                            organizations.append(' '.join([word for word, tag in entity]))
+                        elif entity.label() == 'GPE':
+                            locations.append(' '.join([word for word, tag in entity]))
+
+                # Store extracted data in dictionary
+                if article.title not in data:
+                    data[article.title] = {
+                        'url': article.url,
+                        'text': text,
+                        'organizations': organizations,
+                        'locations': locations
+                    }
+            except:
+                pass
+
+    # Compile report on top emerging sectors for venture capital investments
+    report = ''
+
+    # Determine top emerging sectors by counting the number of mentions of each organization across all articles
+    organization_counts = {}
+    for title in data:
+        for organization in data[title]['organizations']:
+            if organization not in organization_counts:
+                organization_counts[organization] = 1
+            else:
+                organization_counts[organization] += 1
+
+    # Sort organizations by count and select top 10
+    top_organizations = sorted(organization_counts, key=organization_counts.get, reverse=True
+
+
